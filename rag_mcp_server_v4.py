@@ -7,7 +7,7 @@ import pdfplumber
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 # 配置 SiliconFlow
-SILICONFLOW_API_KEY = "sk-nbjqhblhcgproxqwnyhtddoostoiuivuvvydafrvlxjzzrtl"
+SILICONFLOW_API_KEY = "sk-..."
 EMBEDDER_URL = "https://api.siliconflow.com/v1/embeddings"
 EMBEDDER_MODEL = "Qwen/Qwen3-Embedding-4B"
 RERANK_URL = "https://api.siliconflow.com/v1/rerank" 
@@ -80,6 +80,7 @@ def ingest_tool(path):
         for p in pdf.pages:
             texts.append(p.extract_text() or "")
     full_text = "\n".join(texts)
+    # 使用 Langchain 进行分段
     chunks = text_splitter.split_text(full_text)
     metadatas = []
     ids = []
@@ -88,11 +89,14 @@ def ingest_tool(path):
         ids.append(chunk_id)
         metadatas.append({"chunk_id": chunk_id, "doc_id": 0, "chunk_index": i})
 
+    # 为防止单次embedding输入超过token上限，对chunk后的段落每n个进行分组，分组输入embedding模型
     embeddings = []
     n=EMBED_GROUP_SIZE
-    for c in range(len(chunks)//n):
-        embeddings = embeddings + embed_texts(chunks[c*n:c*n+n])
-    embeddings = embeddings + embed_texts(chunks[(len(chunks)//n)*n:])
+    if len(chunks)//n >=1:
+        for c in range(len(chunks)//n):
+            embeddings = embeddings + embed_texts(chunks[c*n:c*n+n])
+    if len(chunks)-(len(chunks)//n)*n >=1:
+        embeddings = embeddings + embed_texts(chunks[(len(chunks)//n)*n:])
 
     collection.add(documents=chunks, metadatas=metadatas, ids=ids, embeddings=embeddings)
     return {"status": "ok", "inserted": len(ids)}
@@ -141,7 +145,3 @@ def retrieve_and_rerank_tool(query):
 # 启动server
 if __name__ == "__main__":
     mcp.run(transport='sse', port=PORT)
-
-# ingest_result = ingest_tool("C:\\Users\\33878\\Desktop\\work\\信息记录\\大语言模型.pdf")
-# ingest_result = ingest_tool("C:\\Users\\33878\\Desktop\\work\\CV\\2025 summer\\张博实 简历.pdf")
-# print("PDF导入结果:", ingest_result)
