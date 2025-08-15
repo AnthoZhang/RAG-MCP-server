@@ -26,6 +26,6 @@
 ## MCP服务器介绍
 - 使用硅基流动：API+模型网址+模型名形式
 - 使用 chromadb 数据库存储
-- 文档导入工具：输入"C:\\Users\\...\\file.pdf"格式的pdf文档地址，提取文字信息，按段落（“\n\n”）进行分段，完成 embedding 后上传至 chromadb 数据库
+- 文档导入工具：输入"C:\\Users\\...\\file.pdf"格式的pdf文档地址，提取文字信息，使用 Langchain 进行分段，对段落进行分组 embedding 防止超过其 token 上限。完成 embedding 后上传至 chromadb 数据库
 - 召回重拍工具：对 query 进行 embedding，从chromadb数据库召回相关段落进行重排，返回最相关的几个段落
 - 使用 cherry studio 内置大模型完成 query 改写，最终回答。
